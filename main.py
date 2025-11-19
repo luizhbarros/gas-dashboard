@@ -180,7 +180,16 @@ while True:
 
             # ===== Lógica de envio de alerta quando mudar de patamar =====
         if last_status_level is None:
-            # primeira leitura: só inicializa
+            # primeira leitura: se já entrou em vermelho, também dispara alerta
+            if status_level == "vermelho":
+                msg = (
+                    f"⚠️ Qualidade do ar entrou em nível CRÍTICO!\n\n"
+                    f"*De:* NENHUM\n"
+                    f"*Para:* {status_level.upper()}\n"
+                    f"*LPG:* {ppm:.2f} ppm\n"
+                    f"*Horário:* {latest_ts}"
+                )
+                send_whatsapp(msg)
             last_status_level = status_level
         elif status_level != last_status_level:
             # mudou de patamar (verde -> amarelo, amarelo -> vermelho, etc.)
