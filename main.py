@@ -237,10 +237,13 @@ while True:
         # Status textual, sem duplicar a palavra (ex.: "Seguro Seguro")
         if status_level == "verde":
             status_text = "Seguro"
+            status_color = "#22c55e"  # verde
         elif status_level == "amarelo":
             status_text = "Atenção"
+            status_color = "#facc15"  # amarelo
         else:
             status_text = "Perigo"
+            status_color = "#ef4444"  # vermelho
 
         card_status.metric(
             label="Status",
