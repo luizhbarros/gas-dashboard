@@ -270,7 +270,15 @@ while True:
 
         # Atualiza log de WhatsApp com st.table (sem índice numérico)
         if len(telegram_log) > 0:
-            df_log = pd.DataFrame(telegram_log)
+            # Sanitizar logs para evitar quebras de linha
+            clean_log = []
+            for item in telegram_log:
+                clean_log.append({
+                    "Horário": str(item["Horário"]).replace("\n", " ").strip(),
+                    "Mensagem": str(item["Mensagem"]).replace("\n", " ").replace("<br>", " ").strip()
+                })
+
+            df_log = pd.DataFrame(clean_log)
             df_log = df_log.reset_index(drop=True)
             telegram_log_placeholder.table(df_log)
 
