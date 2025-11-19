@@ -15,7 +15,7 @@ MQTT_PORT   = int(st.secrets["MQTT_PORT"])
 MQTT_USER   = st.secrets["MQTT_USER"]
 MQTT_PASS   = st.secrets["MQTT_PASS"]
 TELEGRAM_BOT_TOKEN = st.secrets["TELEGRAM_BOT_TOKEN"]
-TELEGRAM_CHAT_ID   = st.secrets.get("TELEGRAM_CHAT_ID", "5815095930")
+TELEGRAM_CHAT_ID   = st.secrets.get("TELEGRAM_CHAT_ID", "8458305107")
 
 # variável global pra guardar último valor
 latest_ppm = 0.0
