@@ -27,6 +27,7 @@ alerts = []          # histórico de alertas
 last_alert_ppm = 0.0
 last_alert_ts = "-"
 alert_update_id = 0
+telegram_log = []
 
 # contador de atualizações (pra saber quando chegou dado novo)
 last_update_id = 0
@@ -37,7 +38,7 @@ sample_index = 0
 last_status_level = None
 
 def send_telegram_message(text: str):
-    """Envia uma mensagem simples para o chat configurado no Telegram."""
+    """Envia mensagem ao Telegram e registra no log local do dashboard."""
     if not TELEGRAM_BOT_TOKEN:
         return
 
@@ -47,6 +48,11 @@ def send_telegram_message(text: str):
         "text": text,
         "parse_mode": "Markdown"
     }
+
+    # REGISTRA NO LOG
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    telegram_log.append({"Horário": timestamp, "Mensagem": text})
+
     try:
         resp = requests.post(url, json=payload, timeout=5)
         if resp.status_code != 200:
@@ -111,6 +117,9 @@ chart_placeholder = st.empty()  # placeholder para o gráfico
 
 st.markdown("### Histórico de alertas")
 alerts_table_placeholder = st.empty()
+
+st.markdown("### Log do Telegram")
+telegram_log_placeholder = st.empty()
 
 # guarda qual update_id já foi processado
 last_processed_id = -1
@@ -231,6 +240,10 @@ while True:
         # Tabela de histórico
         df_alerts = pd.DataFrame(alerts)
         alerts_table_placeholder.dataframe(df_alerts, use_container_width=True)
+
+        if len(telegram_log) > 0:
+            df_telegram = pd.DataFrame(telegram_log)
+            telegram_log_placeholder.dataframe(df_telegram, use_container_width=True)
 
         # reset update flag
         alert_update_id = 0
