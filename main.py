@@ -15,7 +15,7 @@ MQTT_BROKER = st.secrets["MQTT_BROKER"]
 MQTT_PORT   = int(st.secrets["MQTT_PORT"])
 MQTT_USER   = st.secrets["MQTT_USER"]
 MQTT_PASS   = st.secrets["MQTT_PASS"]
-CALLMEBOT_PHONE = "34644872157"
+CALLMEBOT_PHONE = "5511994109391"
 CALLMEBOT_KEY = "9991859"
 
 # variável global pra guardar último valor
