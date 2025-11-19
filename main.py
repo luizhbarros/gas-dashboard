@@ -164,16 +164,13 @@ while True:
         # cria DataFrame para gráfico (eixo X numérico: 0,20,40,...)
         df = pd.DataFrame(readings)
 
-        # label de tempo em segundos (20, 40, 60...) como string
-        df["tempo_s"] = df["elapsed_s"].astype(int).astype(str)
-
         chart = (
             alt.Chart(df)
             .mark_circle(size=80)
             .encode(
-                x=alt.X("tempo_s:O", title="Tempo (s) – cada ponto = 20s"),
+                x=alt.X("elapsed_s:Q", title="Tempo (s) – cada ponto = 20s"),
                 y=alt.Y("ppm:Q", title="LPG (ppm)"),
-                tooltip=["tempo_s", "ppm"]
+                tooltip=["elapsed_s", "ppm"]
             )
             .interactive()
         )
