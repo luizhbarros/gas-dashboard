@@ -7,7 +7,6 @@ from datetime import datetime
 import altair as alt
 import requests
 import urllib.parse
-import html
 
 
 TOPIC_LPG   = "railtracker/gas/lpg_ppm"
@@ -16,8 +15,10 @@ MQTT_BROKER = st.secrets["MQTT_BROKER"]
 MQTT_PORT   = int(st.secrets["MQTT_PORT"])
 MQTT_USER   = st.secrets["MQTT_USER"]
 MQTT_PASS   = st.secrets["MQTT_PASS"]
+
+# WhatsApp (CallMeBot)
 CALLMEBOT_PHONE = "5511994109391"
-CALLMEBOT_KEY = "9991859"
+CALLMEBOT_KEY   = "9991859"
 
 # variável global pra guardar último valor
 latest_ppm = 0.0
@@ -25,10 +26,14 @@ latest_ts  = "-"   # timestamp da última leitura
 
 # lista para histórico de leituras (elapsed_s + ppm)
 readings = []
-alerts = []          # histórico de alertas
+
+# histórico de alertas
+alerts = []
 last_alert_ppm = 0.0
 last_alert_ts = "-"
 alert_update_id = 0
+
+# log de mensagens enviadas ao WhatsApp
 telegram_log = []
 
 # contador de atualizações (pra saber quando chegou dado novo)
@@ -36,103 +41,13 @@ last_update_id = 0
 
 # contador de amostras (cada amostra = 20 s)
 sample_index = 0
+
 # guarda o último patamar de qualidade do ar ("verde", "amarelo", "vermelho")
 last_status_level = None
 
-def render_alerts_table(alerts_list):
-    """Gera HTML estilizado para a tabela de alertas."""
-    if not alerts_list:
-        return """
-        <div style="padding:1rem;border-radius:0.75rem;background-color:#111827;
-                    border:1px solid #374151;color:#9CA3AF;font-size:0.85rem;">
-          Nenhum alerta registrado até o momento.
-        </div>
-        """
 
-    rows_html = ""
-    for a in reversed(alerts_list[-20:]):  # mostra só os 20 últimos
-        tempo = html.escape(a.get("Tempo", ""))
-        ppm = a.get("PPM", 0.0)
-        rows_html += f"""
-        <tr>
-          <td style="padding:0.4rem 0.6rem;border-bottom:1px solid #1F2933;font-size:0.8rem;color:#D1D5DB;">
-            {tempo}
-          </td>
-          <td style="padding:0.4rem 0.6rem;border-bottom:1px solid #1F2933;font-size:0.8rem;color:#FBBF24;text-align:right;">
-            {ppm:.2f}
-          </td>
-        </tr>
-        """
-
-    return f"""
-    <div style="padding:1rem;border-radius:0.75rem;background-color:#020617;
-                border:1px solid #374151;">
-      <table style="width:100%;border-collapse:collapse;">
-        <thead>
-          <tr>
-            <th style="text-align:left;padding:0.3rem 0.6rem;font-size:0.75rem;color:#9CA3AF;font-weight:500;border-bottom:1px solid #4B5563;">
-              Timestamp
-            </th>
-            <th style="text-align:right;padding:0.3rem 0.6rem;font-size:0.75rem;color:#9CA3AF;font-weight:500;border-bottom:1px solid #4B5563;">
-              LPG (ppm)
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows_html}
-        </tbody>
-      </table>
-    </div>
-    """
-
-
-def render_whatsapp_log(log_list):
-    """Gera HTML estilizado para o log de WhatsApp."""
-    if not log_list:
-        return """
-        <div style="padding:1rem;border-radius:0.75rem;background-color:#111827;
-                    border:1px solid #374151;color:#9CA3AF;font-size:0.85rem;">
-          Nenhuma mensagem enviada pelo sistema ainda.
-        </div>
-        """
-
-    rows_html = ""
-    for entry in reversed(log_list[-20:]):  # últimos 20
-        ts = html.escape(entry.get("Horário", ""))
-        msg = html.escape(entry.get("Mensagem", ""))
-        rows_html += f"""
-        <tr>
-          <td style="padding:0.4rem 0.6rem;border-bottom:1px solid #1F2933;font-size:0.8rem;color:#D1D5DB;white-space:nowrap;">
-            {ts}
-          </td>
-          <td style="padding:0.4rem 0.6rem;border-bottom:1px solid #1F2933;font-size:0.8rem;color:#E5E7EB;">
-            <div style="white-space:pre-wrap;word-break:break-word;">{msg}</div>
-          </td>
-        </tr>
-        """
-
-    return f"""
-    <div style="padding:1rem;border-radius:0.75rem;background-color:#020617;
-                border:1px solid #374151;max-height:260px;overflow-y:auto;">
-      <table style="width:100%;border-collapse:collapse;">
-        <thead>
-          <tr>
-            <th style="text-align:left;padding:0.3rem 0.6rem;font-size:0.75rem;color:#9CA3AF;font-weight:500;border-bottom:1px solid #4B5563;">
-              Horário
-            </th>
-            <th style="text-align:left;padding:0.3rem 0.6rem;font-size:0.75rem;color:#9CA3AF;font-weight:500;border-bottom:1px solid #4B5563;">
-              Mensagem
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows_html}
-        </tbody>
-      </table>
-    </div>
-    """
-
-def send_whatsapp(text):
+def send_whatsapp(text: str):
+    """Envia mensagem via CallMeBot e registra no log local."""
     # registra no log local para aparecer no dashboard
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     telegram_log.append({"Horário": timestamp, "Mensagem": text})
@@ -146,7 +61,7 @@ def send_whatsapp(text):
         status_info = f"HTTP {r.status_code} - {r.text[:200]}"
         print("WhatsApp resp:", status_info)
 
-        # também guarda no log visível
+        # também guarda no log visível (debug)
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         telegram_log.append({"Horário": timestamp, "Mensagem": text + f"\n\n[DEBUG] {status_info}"})
 
@@ -169,7 +84,7 @@ def on_message(client, userdata, msg):
     try:
         payload_str = msg.payload.decode("utf-8")
         value = float(payload_str)
-    except:
+    except Exception:
         return
 
     if msg.topic == TOPIC_LPG:
@@ -220,6 +135,7 @@ telegram_log_placeholder = st.empty()
 # guarda qual update_id já foi processado
 last_processed_id = -1
 
+# mensagem de teste inicial
 send_whatsapp("Teste manual do dashboard: se você recebeu isso, o CallMeBot está OK.")
 
 while True:
@@ -233,7 +149,7 @@ while True:
         sample_index += 1
         elapsed_s = sample_index * 20
 
-        # timestamp real da leitura (mostrado só na janela de última leitura)
+        # timestamp real da leitura
         latest_ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
         # registra no histórico: eixo X = segundos acumulados
@@ -278,96 +194,86 @@ while True:
             # primeira leitura: se já entrou em vermelho, também dispara alerta
             if status_level == "vermelho":
                 msg = (
-                    f"⚠️ Qualidade do ar entrou em nível CRÍTICO!\n\n"
-                    f"*De:* NENHUM\n"
-                    f"*Para:* {status_level.upper()}\n"
-                    f"*LPG:* {ppm:.2f} ppm\n"
-                    f"*Horário:* {latest_ts}"
+                    "⚠️ Qualidade do ar entrou em nível CRÍTICO!\n\n"
+                    f"De: NENHUM\n"
+                    f"Para: {status_level.upper()}\n"
+                    f"LPG: {ppm:.2f} ppm\n"
+                    f"Horário: {latest_ts}"
                 )
                 send_whatsapp(msg)
             last_status_level = status_level
         elif status_level != last_status_level:
             # mudou de patamar (verde -> amarelo, amarelo -> vermelho, etc.)
             msg = (
-                f"⚠️ Qualidade do ar mudou de patamar!\n\n"
-                f"*De:* {last_status_level.upper()}\n"
-                f"*Para:* {status_level.upper()}\n"
-                f"*LPG:* {ppm:.2f} ppm\n"
-                f"*Horário:* {latest_ts}"
+                "⚠️ Qualidade do ar mudou de patamar!\n\n"
+                f"De: {last_status_level.upper()}\n"
+                f"Para: {status_level.upper()}\n"
+                f"LPG: {ppm:.2f} ppm\n"
+                f"Horário: {latest_ts}"
             )
             send_whatsapp(msg)
             last_status_level = status_level
 
-        # card de LPG atual
-        card_ppm.markdown(
-            f"""
-            <div style="padding:1rem;border-radius:0.75rem;background-color:#111827;
-                        border:1px solid #374151;">
-              <div style="font-size:0.8rem;color:#9CA3AF;">LPG atual</div>
-              <div style="font-size:1.8rem;font-weight:700;color:#E5E7EB;">{ppm:.2f} ppm</div>
-              <div style="font-size:0.75rem;color:#6B7280;margin-top:0.25rem;">Última leitura: {latest_ts}</div>
-            </div>
-            """,
-            unsafe_allow_html=True,
+        # --- MÉTRICAS (st.metric) ---
+
+        # LPG atual
+        card_ppm.metric(
+            label="LPG Atual (ppm)",
+            value=f"{ppm:.2f}",
         )
 
-        # card de status
-        card_status.markdown(
-            f"""
-            <div style="padding:1rem;border-radius:0.75rem;background-color:#111827;
-                        border:1px solid #374151;">
-              <div style="font-size:0.8rem;color:#9CA3AF;">Status</div>
-              <div style="font-size:1.5rem;font-weight:600;color:#E5E7EB;margin-top:0.25rem;">{status}</div>
-            </div>
-            """,
-            unsafe_allow_html=True,
+        # Status textual (sem mudar a lógica antiga)
+        status_text = (
+            status.replace("🟢", "Seguro")
+                  .replace("🟡", "Atenção")
+                  .replace("🔴", "Perigo")
+                  .strip()
+        )
+        card_status.metric(
+            label="Status",
+            value=status_text,
         )
 
-    # dorme um pouco só pra não fritar CPU; não redesenha se não tiver leitura nova
+        # Último alerta (se já houve algum)
+        if last_alert_ts != "-":
+            card_last_alert.metric(
+                label="Último alerta (ppm)",
+                value=f"{last_alert_ppm:.2f}",
+                delta=last_alert_ts,
+            )
+        else:
+            card_last_alert.metric(
+                label="Último alerta (ppm)",
+                value="--",
+                delta="Sem alertas",
+            )
+
+    # Bloco de processamento de alertas (TOPIC_ALERT)
     if alert_update_id > 0:
         # Registrar alerta novo
-        alerts.append({"Tempo": last_alert_ts, "PPM": last_alert_ppm})
+        alerts.append({"Timestamp": last_alert_ts, "PPM": last_alert_ppm})
         if len(alerts) > 200:
             alerts = alerts[-200:]
 
-            alerts_html = render_alerts_table(alerts)
-            alerts_table_placeholder.markdown(alerts_html, unsafe_allow_html=True)
-
-            # Log de WhatsApp (estilizado)
-            whatsapp_html = render_whatsapp_log(telegram_log)
-            telegram_log_placeholder.markdown(whatsapp_html, unsafe_allow_html=True)
-
         # Envio de alerta via WhatsApp sempre que um novo alerta MQTT chegar
         msg = (
-            f"🚨 ALERTA DE GÁS DETECTADO 🚨\n\n"
+            "🚨 ALERTA DE GÁS DETECTADO 🚨\n\n"
             f"LPG: {last_alert_ppm:.2f} ppm\n"
             f"Horário: {last_alert_ts}"
         )
         send_whatsapp(msg)
 
-        # Último alerta em card
-        date_only = last_alert_ts.split(" ")[0]
-        card_last_alert.markdown(
-            f"""
-            <div style="padding:1rem;border-radius:0.75rem;background-color:#111827;
-                        border:1px solid #4B5563;">
-              <div style="font-size:0.8rem;color:#9CA3AF;">Último alerta</div>
-              <div style="font-size:0.95rem;color:#F9FAFB;margin-top:0.25rem;">Data: {date_only}</div>
-              <div style="font-size:0.95rem;color:#F9FAFB;">PPM: {last_alert_ppm:.2f}</div>
-              <div style="font-size:0.75rem;color:#6B7280;margin-top:0.25rem;">Timestamp: {last_alert_ts}</div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
+        # Atualiza tabela de alertas com st.table
+        df_alerts = pd.DataFrame(alerts)
+        alerts_table_placeholder.table(df_alerts)
 
-        # Tabela de histórico
-        alerts_html = render_alerts_table(alerts)
-        alerts_table_placeholder.markdown(alerts_html, unsafe_allow_html=True)
-
-        # Log de WhatsApp (estilizado)
-        whatsapp_html = render_whatsapp_log(telegram_log)
-        telegram_log_placeholder.markdown(whatsapp_html, unsafe_allow_html=True)
+        # Atualiza log de WhatsApp com st.table
+        if len(telegram_log) > 0:
+            df_log = pd.DataFrame(telegram_log)
+            telegram_log_placeholder.table(df_log)
 
         # reset update flag
         alert_update_id = 0
+
+    # dorme um pouco só pra não fritar CPU
     time.sleep(0.1)
