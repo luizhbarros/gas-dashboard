@@ -39,6 +39,11 @@ sample_index = 0
 last_status_level = None
 
 def send_whatsapp(text):
+    # registra no log local para aparecer no dashboard
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    telegram_log.append({"Horário": timestamp, "Mensagem": text})
+
+    # envia mensagem via CallMeBot
     msg = urllib.parse.quote(text)
     url = f"https://api.callmebot.com/whatsapp.php?phone={CALLMEBOT_PHONE}&text={msg}&apikey={CALLMEBOT_KEY}"
 
@@ -112,6 +117,8 @@ telegram_log_placeholder = st.empty()
 
 # guarda qual update_id já foi processado
 last_processed_id = -1
+
+send_whatsapp("Teste manual do dashboard: se você recebeu isso, o CallMeBot está OK.")
 
 while True:
     # só atualiza se chegou leitura nova via MQTT
