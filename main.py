@@ -45,6 +45,8 @@ sample_index = 0
 # guarda o último patamar de qualidade do ar ("verde", "amarelo", "vermelho")
 last_status_level = None
 
+prev_ppm = None  # último valor de LPG para cálculo de delta no st.metric
+
 
 def send_whatsapp(text: str):
     """Envia mensagem via CallMeBot e registra no log local."""
@@ -216,19 +218,29 @@ while True:
 
         # --- MÉTRICAS (st.metric) ---
 
-        # LPG atual
+        # LPG atual com delta em relação à última leitura
+        if prev_ppm is None:
+            delta_ppm = 0.0
+        else:
+            delta_ppm = ppm - prev_ppm
+
         card_ppm.metric(
             label="LPG Atual (ppm)",
             value=f"{ppm:.2f}",
+            delta=f"{delta_ppm:+.2f} ppm",
         )
 
-        # Status textual (sem mudar a lógica antiga)
-        status_text = (
-            status.replace("🟢", "Seguro")
-                  .replace("🟡", "Atenção")
-                  .replace("🔴", "Perigo")
-                  .strip()
-        )
+        # guarda valor atual para próxima comparação
+        prev_ppm = ppm
+
+        # Status textual, sem duplicar a palavra (ex.: "Seguro Seguro")
+        if status_level == "verde":
+            status_text = "Seguro"
+        elif status_level == "amarelo":
+            status_text = "Atenção"
+        else:
+            status_text = "Perigo"
+
         card_status.metric(
             label="Status",
             value=status_text,
