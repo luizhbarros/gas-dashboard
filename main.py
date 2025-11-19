@@ -3,7 +3,7 @@ import paho.mqtt.client as mqtt
 import threading
 import time
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 import altair as alt
 import requests
 import urllib.parse
@@ -45,13 +45,18 @@ sample_index = 0
 # guarda o último patamar de qualidade do ar ("verde", "amarelo", "vermelho")
 last_status_level = None
 
+
 prev_ppm = None  # último valor de LPG para cálculo de delta no st.metric
+
+def now_br_str() -> str:
+    """Retorna o horário atual em Brasília (UTC-3) como string."""
+    return (datetime.now(timezone.utc) - timedelta(hours=3)).strftime("%Y-%m-%d %H:%M:%S")
 
 
 def send_whatsapp(text: str):
     """Envia mensagem via CallMeBot e registra no log local."""
     # registra no log local para aparecer no dashboard
-    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    timestamp = now_br_str()
     telegram_log.append({"Horário": timestamp, "Mensagem": text})
 
     # envia mensagem via CallMeBot
@@ -64,13 +69,13 @@ def send_whatsapp(text: str):
         print("WhatsApp resp:", status_info)
 
         # também guarda no log visível (debug)
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        timestamp = now_br_str()
         telegram_log.append({"Horário": timestamp, "Mensagem": text + f"\n\n[DEBUG] {status_info}"})
 
     except Exception as e:
         err_info = f"Erro WhatsApp: {e}"
         print(err_info)
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        timestamp = now_br_str()
         telegram_log.append({"Horário": timestamp, "Mensagem": text + f"\n\n[DEBUG] {err_info}"})
 
 
@@ -95,7 +100,7 @@ def on_message(client, userdata, msg):
 
     elif msg.topic == TOPIC_ALERT:
         last_alert_ppm = value
-        last_alert_ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        last_alert_ts = now_br_str()
         alert_update_id += 1
 
 
@@ -151,7 +156,7 @@ while True:
         elapsed_s = sample_index * 20
 
         # timestamp real da leitura
-        latest_ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        latest_ts = now_br_str()
 
         # registra no histórico: eixo X = segundos acumulados
         readings.append({"elapsed_s": elapsed_s, "ppm": ppm, "ts": latest_ts})
