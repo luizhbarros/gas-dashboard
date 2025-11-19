@@ -107,7 +107,7 @@ chart_placeholder = st.empty()  # placeholder para o gráfico
 st.markdown("### Histórico de alertas")
 alerts_table_placeholder = st.empty()
 
-st.markdown("### Log do Telegram")
+st.markdown("### Log do Whatsapp")
 telegram_log_placeholder = st.empty()
 
 # guarda qual update_id já foi processado
