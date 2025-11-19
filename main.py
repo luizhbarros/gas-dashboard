@@ -277,16 +277,22 @@ while True:
         )
         send_whatsapp(msg)
 
-        # Atualiza tabela de alertas com st.table (sem índice numérico)
+        # Atualiza tabela de alertas com st.table (sem índice visível)
         df_alerts = pd.DataFrame(alerts)
         df_alerts = df_alerts.reset_index(drop=True)
+
+        # formata PPM sem separador de milhar e com 2 casas decimais
+        df_alerts["PPM"] = df_alerts["PPM"].map(lambda x: f"{x:.2f}")
+
         st.markdown("""
         <style>
         thead tr th:first-child {width: 200px !important;}
         tbody td {white-space: nowrap !important;}
         </style>
         """, unsafe_allow_html=True)
-        alerts_table_placeholder.table(df_alerts)
+
+        # esconde a coluna de índice usando Styler
+        alerts_table_placeholder.table(df_alerts.style.hide(axis="index"))
 
         # Atualiza log de WhatsApp com st.table (sem índice numérico)
         if len(telegram_log) > 0:
@@ -306,7 +312,8 @@ while True:
             tbody td {white-space: nowrap !important;}
             </style>
             """, unsafe_allow_html=True)
-            telegram_log_placeholder.table(df_log)
+            # esconde a coluna de índice usando Styler
+            telegram_log_placeholder.table(df_log.style.hide(axis="index"))
 
         # reset update flag
         alert_update_id = 0
