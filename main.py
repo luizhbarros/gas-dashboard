@@ -155,7 +155,7 @@ while True:
         latest_ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
         # registra no histórico: eixo X = segundos acumulados
-        readings.append({"elapsed_s": elapsed_s, "ppm": ppm})
+        readings.append({"elapsed_s": elapsed_s, "ppm": ppm, "ts": latest_ts})
 
         # mantém tamanho máximo (ex: últimas 200 leituras)
         if len(readings) > 200:
@@ -166,11 +166,15 @@ while True:
 
         chart = (
             alt.Chart(df)
-            .mark_circle(size=80)
+            .mark_line(point=True)
             .encode(
                 x=alt.X("elapsed_s:Q", title="Tempo (s) – cada ponto = 20s"),
                 y=alt.Y("ppm:Q", title="LPG (ppm)"),
-                tooltip=["elapsed_s", "ppm"]
+                tooltip=[
+                    alt.Tooltip("elapsed_s:Q", title="Tempo (s)"),
+                    alt.Tooltip("ppm:Q", title="LPG (ppm)", format=".2f"),
+                    alt.Tooltip("ts:N", title="Horário"),
+                ],
             )
             .interactive()
         )
@@ -225,6 +229,7 @@ while True:
             label="LPG Atual (ppm)",
             value=f"{ppm:.2f}",
             delta=f"{delta_ppm:+.2f} ppm",
+            delta_color="inverse",  # aumento = vermelho, queda = verde
         )
 
         # guarda valor atual para próxima comparação
