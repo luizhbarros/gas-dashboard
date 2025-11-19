@@ -166,7 +166,6 @@ while True:
             status_level = "vermelho"
 
             # ===== Lógica de envio de alerta quando mudar de patamar =====
-        global last_status_level
         if last_status_level is None:
             # primeira leitura: só inicializa
             last_status_level = status_level
