@@ -259,7 +259,7 @@ while True:
             )
         )
 
-        chart_placeholder.altair_chart(chart, use_container_width=True)
+        st.altair_chart(chart, use_container_width=True)
 
         # lógica de status
         if ppm <= 1000:
@@ -298,28 +298,21 @@ while True:
             last_status_level = status_level
 
         # card de LPG atual
-        card_ppm.markdown(
-            f"""
-            <div style="padding:1rem;border-radius:0.75rem;background-color:#111827;
-                        border:1px solid #374151;">
-              <div style="font-size:0.8rem;color:#9CA3AF;">LPG atual</div>
-              <div style="font-size:1.8rem;font-weight:700;color:#E5E7EB;">{ppm:.2f} ppm</div>
-              <div style="font-size:0.75rem;color:#6B7280;margin-top:0.25rem;">Última leitura: {latest_ts}</div>
-            </div>
-            """,
-            unsafe_allow_html=True,
+        card_ppm.metric(
+            label="LPG Atual (ppm)",
+            value=f"{ppm:.2f}",
         )
 
         # card de status
-        card_status.markdown(
-            f"""
-            <div style="padding:1rem;border-radius:0.75rem;background-color:#111827;
-                        border:1px solid #374151;">
-              <div style="font-size:0.8rem;color:#9CA3AF;">Status</div>
-              <div style="font-size:1.5rem;font-weight:600;color:#E5E7EB;margin-top:0.25rem;">{status}</div>
-            </div>
-            """,
-            unsafe_allow_html=True,
+        card_status.metric(
+            label="Status",
+            value=status.replace("🟢", "").replace("🟡", "").replace("🔴", ""),
+        )
+
+        card_last_alert.metric(
+            label="Último Alerta",
+            value=f"{last_alert_ppm:.2f} ppm",
+            delta=last_alert_ts,
         )
 
     # dorme um pouco só pra não fritar CPU; não redesenha se não tiver leitura nova
@@ -346,26 +339,14 @@ while True:
 
         # Último alerta em card
         date_only = last_alert_ts.split(" ")[0]
-        card_last_alert.markdown(
-            f"""
-            <div style="padding:1rem;border-radius:0.75rem;background-color:#111827;
-                        border:1px solid #4B5563;">
-              <div style="font-size:0.8rem;color:#9CA3AF;">Último alerta</div>
-              <div style="font-size:0.95rem;color:#F9FAFB;margin-top:0.25rem;">Data: {date_only}</div>
-              <div style="font-size:0.95rem;color:#F9FAFB;">PPM: {last_alert_ppm:.2f}</div>
-              <div style="font-size:0.75rem;color:#6B7280;margin-top:0.25rem;">Timestamp: {last_alert_ts}</div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
 
         # Tabela de histórico
-        alerts_html = render_alerts_table(alerts)
-        alerts_table_placeholder.markdown(alerts_html, unsafe_allow_html=True)
+        df_alerts = pd.DataFrame(alerts)
+        alerts_table_placeholder.table(df_alerts)
 
         # Log de WhatsApp (estilizado)
-        whatsapp_html = render_whatsapp_log(telegram_log)
-        telegram_log_placeholder.markdown(whatsapp_html, unsafe_allow_html=True)
+        df_telegram = pd.DataFrame(telegram_log)
+        telegram_log_placeholder.table(df_telegram)
 
         # reset update flag
         alert_update_id = 0
