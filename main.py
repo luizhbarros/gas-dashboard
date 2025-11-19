@@ -49,10 +49,18 @@ def send_whatsapp(text):
 
     try:
         r = requests.get(url, timeout=5)
-        if r.status_code != 200:
-            print("Erro WhatsApp:", r.text)
+        status_info = f"HTTP {r.status_code} - {r.text[:200]}"
+        print("WhatsApp resp:", status_info)
+
+        # também guarda no log visível
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        telegram_log.append({"Horário": timestamp, "Mensagem": text + f"\n\n[DEBUG] {status_info}"})
+
     except Exception as e:
-        print("Erro WhatsApp:", e)
+        err_info = f"Erro WhatsApp: {e}"
+        print(err_info)
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        telegram_log.append({"Horário": timestamp, "Mensagem": text + f"\n\n[DEBUG] {err_info}"})
 
 
 def on_connect(client, userdata, flags, rc):
