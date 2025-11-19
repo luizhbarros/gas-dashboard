@@ -177,6 +177,14 @@ while True:
         else:
             status = "🔴 Perigo"
             status_level = "vermelho"
+            msg_alerta = (
+                f"⚠️ Qualidade do ar entrou em nível CRÍTICO!\n\n"
+                f"*De:* NENHUM\n"
+                f"*Para:* {status_level.upper()}\n"
+                f"*LPG:* {ppm:.2f} ppm\n"
+                f"*Horário:* {latest_ts}"
+            )
+            send_whatsapp(msg_alerta)
 
             # ===== Lógica de envio de alerta quando mudar de patamar =====
         if last_status_level is None:
