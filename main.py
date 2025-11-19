@@ -7,6 +7,7 @@ from datetime import datetime
 import altair as alt
 import requests
 import urllib.parse
+import html
 
 
 TOPIC_LPG   = "railtracker/gas/lpg_ppm"
@@ -37,6 +38,99 @@ last_update_id = 0
 sample_index = 0
 # guarda o último patamar de qualidade do ar ("verde", "amarelo", "vermelho")
 last_status_level = None
+
+def render_alerts_table(alerts_list):
+    """Gera HTML estilizado para a tabela de alertas."""
+    if not alerts_list:
+        return """
+        <div style="padding:1rem;border-radius:0.75rem;background-color:#111827;
+                    border:1px solid #374151;color:#9CA3AF;font-size:0.85rem;">
+          Nenhum alerta registrado até o momento.
+        </div>
+        """
+
+    rows_html = ""
+    for a in reversed(alerts_list[-20:]):  # mostra só os 20 últimos
+        tempo = html.escape(a.get("Tempo", ""))
+        ppm = a.get("PPM", 0.0)
+        rows_html += f"""
+        <tr>
+          <td style="padding:0.4rem 0.6rem;border-bottom:1px solid #1F2933;font-size:0.8rem;color:#D1D5DB;">
+            {tempo}
+          </td>
+          <td style="padding:0.4rem 0.6rem;border-bottom:1px solid #1F2933;font-size:0.8rem;color:#FBBF24;text-align:right;">
+            {ppm:.2f}
+          </td>
+        </tr>
+        """
+
+    return f"""
+    <div style="padding:1rem;border-radius:0.75rem;background-color:#020617;
+                border:1px solid #374151;">
+      <table style="width:100%;border-collapse:collapse;">
+        <thead>
+          <tr>
+            <th style="text-align:left;padding:0.3rem 0.6rem;font-size:0.75rem;color:#9CA3AF;font-weight:500;border-bottom:1px solid #4B5563;">
+              Timestamp
+            </th>
+            <th style="text-align:right;padding:0.3rem 0.6rem;font-size:0.75rem;color:#9CA3AF;font-weight:500;border-bottom:1px solid #4B5563;">
+              LPG (ppm)
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows_html}
+        </tbody>
+      </table>
+    </div>
+    """
+
+
+def render_whatsapp_log(log_list):
+    """Gera HTML estilizado para o log de WhatsApp."""
+    if not log_list:
+        return """
+        <div style="padding:1rem;border-radius:0.75rem;background-color:#111827;
+                    border:1px solid #374151;color:#9CA3AF;font-size:0.85rem;">
+          Nenhuma mensagem enviada pelo sistema ainda.
+        </div>
+        """
+
+    rows_html = ""
+    for entry in reversed(log_list[-20:]):  # últimos 20
+        ts = html.escape(entry.get("Horário", ""))
+        msg = html.escape(entry.get("Mensagem", ""))
+        rows_html += f"""
+        <tr>
+          <td style="padding:0.4rem 0.6rem;border-bottom:1px solid #1F2933;font-size:0.8rem;color:#D1D5DB;white-space:nowrap;">
+            {ts}
+          </td>
+          <td style="padding:0.4rem 0.6rem;border-bottom:1px solid #1F2933;font-size:0.8rem;color:#E5E7EB;">
+            <div style="white-space:pre-wrap;word-break:break-word;">{msg}</div>
+          </td>
+        </tr>
+        """
+
+    return f"""
+    <div style="padding:1rem;border-radius:0.75rem;background-color:#020617;
+                border:1px solid #374151;max-height:260px;overflow-y:auto;">
+      <table style="width:100%;border-collapse:collapse;">
+        <thead>
+          <tr>
+            <th style="text-align:left;padding:0.3rem 0.6rem;font-size:0.75rem;color:#9CA3AF;font-weight:500;border-bottom:1px solid #4B5563;">
+              Horário
+            </th>
+            <th style="text-align:left;padding:0.3rem 0.6rem;font-size:0.75rem;color:#9CA3AF;font-weight:500;border-bottom:1px solid #4B5563;">
+              Mensagem
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows_html}
+        </tbody>
+      </table>
+    </div>
+    """
 
 def send_whatsapp(text):
     # registra no log local para aparecer no dashboard
@@ -259,12 +353,12 @@ while True:
         )
 
         # Tabela de histórico
-        df_alerts = pd.DataFrame(alerts)
-        alerts_table_placeholder.dataframe(df_alerts, use_container_width=True)
+        alerts_html = render_alerts_table(alerts)
+        alerts_table_placeholder.markdown(alerts_html, unsafe_allow_html=True)
 
-        if len(telegram_log) > 0:
-            df_telegram = pd.DataFrame(telegram_log)
-            telegram_log_placeholder.dataframe(df_telegram, use_container_width=True)
+        # Log de WhatsApp (estilizado)
+        whatsapp_html = render_whatsapp_log(telegram_log)
+        telegram_log_placeholder.markdown(whatsapp_html, unsafe_allow_html=True)
 
         # reset update flag
         alert_update_id = 0
