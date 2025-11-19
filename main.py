@@ -246,9 +246,10 @@ while True:
             status_color = "#ef4444"  # vermelho
 
         # usamos HTML/CSS para colorir o texto, já que st.metric não permite cor customizada
+        # margin-top negativo para alinhar verticalmente com os outros cards de métricas
         card_status.markdown(
             f"""
-            <div style="text-align:center;">
+            <div style="text-align:center; margin-top:-12px;">
               <div style="font-size:0.9rem; color:#9ca3af;">Status</div>
               <div style="font-size:2.5rem; font-weight:700; color:{status_color};">
                 {status_text}
