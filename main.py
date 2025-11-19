@@ -263,13 +263,15 @@ while True:
         )
         send_whatsapp(msg)
 
-        # Atualiza tabela de alertas com st.table
+        # Atualiza tabela de alertas com st.table (sem índice numérico)
         df_alerts = pd.DataFrame(alerts)
+        df_alerts = df_alerts.reset_index(drop=True)
         alerts_table_placeholder.table(df_alerts)
 
-        # Atualiza log de WhatsApp com st.table
+        # Atualiza log de WhatsApp com st.table (sem índice numérico)
         if len(telegram_log) > 0:
             df_log = pd.DataFrame(telegram_log)
+            df_log = df_log.reset_index(drop=True)
             telegram_log_placeholder.table(df_log)
 
         # reset update flag
