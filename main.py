@@ -329,6 +329,13 @@ while True:
         if len(alerts) > 200:
             alerts = alerts[-200:]
 
+            alerts_html = render_alerts_table(alerts)
+            alerts_table_placeholder.markdown(alerts_html, unsafe_allow_html=True)
+
+            # Log de WhatsApp (estilizado)
+            whatsapp_html = render_whatsapp_log(telegram_log)
+            telegram_log_placeholder.markdown(whatsapp_html, unsafe_allow_html=True)
+
         # Envio de alerta via WhatsApp sempre que um novo alerta MQTT chegar
         msg = (
             f"🚨 ALERTA DE GÁS DETECTADO 🚨\n\n"
