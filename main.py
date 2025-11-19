@@ -177,20 +177,8 @@ while True:
         else:
             status = "🔴 Perigo"
             status_level = "vermelho"
-            msg_alerta = (
-                f"⚠️ Qualidade do ar entrou em nível CRÍTICO!\n\n"
-                f"*De:* NENHUM\n"
-                f"*Para:* {status_level.upper()}\n"
-                f"*LPG:* {ppm:.2f} ppm\n"
-                f"*Horário:* {latest_ts}"
-            )
-            send_whatsapp(f"⚠️ Qualidade do ar entrou em nível CRÍTICO!\n\n"
-                f"*De:* NENHUM\n"
-                f"*Para:* {status_level.upper()}\n"
-                f"*LPG:* {ppm:.2f} ppm\n"
-                f"*Horário:* {latest_ts}")
 
-            # ===== Lógica de envio de alerta quando mudar de patamar =====
+        # ===== Lógica de envio de alerta quando mudar de patamar =====
         if last_status_level is None:
             # primeira leitura: se já entrou em vermelho, também dispara alerta
             if status_level == "vermelho":
@@ -246,6 +234,14 @@ while True:
         alerts.append({"Tempo": last_alert_ts, "PPM": last_alert_ppm})
         if len(alerts) > 200:
             alerts = alerts[-200:]
+
+        # Envio de alerta via WhatsApp sempre que um novo alerta MQTT chegar
+        msg = (
+            f"🚨 ALERTA DE GÁS DETECTADO 🚨\n\n"
+            f"LPG: {last_alert_ppm:.2f} ppm\n"
+            f"Horário: {last_alert_ts}"
+        )
+        send_whatsapp(msg)
 
         # Último alerta em card
         date_only = last_alert_ts.split(" ")[0]
