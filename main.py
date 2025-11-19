@@ -117,8 +117,7 @@ threading.Thread(target=mqtt_thread, daemon=True).start()
 # --- UI do Streamlit ---
 st.set_page_config(page_title="Gas Monitor", page_icon="🧪", layout="centered")
 
-st.title("Gas Monitor - LPG (MQ-2)")
-st.markdown("Leitura em tempo real a partir do Mosquitto")
+st.title("FireSafe Monitor")
 
 top_col1, top_col2, top_col3 = st.columns(3)
 card_ppm = top_col1.empty()
