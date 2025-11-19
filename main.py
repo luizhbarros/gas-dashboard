@@ -292,7 +292,11 @@ while True:
         """, unsafe_allow_html=True)
 
         # esconde a coluna de índice usando Styler
-        alerts_table_placeholder.table(df_alerts.style.hide(axis="index"))
+        alerts_table_placeholder.dataframe(
+            df_alerts,
+            use_container_width=True,
+            hide_index=True
+        )
 
         # Atualiza log de WhatsApp com st.table (sem índice numérico)
         if len(telegram_log) > 0:
@@ -313,7 +317,11 @@ while True:
             </style>
             """, unsafe_allow_html=True)
             # esconde a coluna de índice usando Styler
-            telegram_log_placeholder.table(df_log.style.hide(axis="index"))
+            telegram_log_placeholder.dataframe(
+                df_log,
+                use_container_width=True,
+                hide_index=True
+            )
 
         # reset update flag
         alert_update_id = 0
