@@ -6,6 +6,7 @@ import pandas as pd
 from datetime import datetime
 import altair as alt
 import requests
+import urllib.parse
 
 
 TOPIC_LPG   = "railtracker/gas/lpg_ppm"
@@ -14,8 +15,8 @@ MQTT_BROKER = st.secrets["MQTT_BROKER"]
 MQTT_PORT   = int(st.secrets["MQTT_PORT"])
 MQTT_USER   = st.secrets["MQTT_USER"]
 MQTT_PASS   = st.secrets["MQTT_PASS"]
-TELEGRAM_BOT_TOKEN = st.secrets["TELEGRAM_BOT_TOKEN"]
-TELEGRAM_CHAT_ID   = st.secrets.get("TELEGRAM_CHAT_ID", "8458305107")
+CALLMEBOT_PHONE = "34644872157"
+CALLMEBOT_KEY = "9991859"
 
 # variável global pra guardar último valor
 latest_ppm = 0.0
@@ -37,28 +38,16 @@ sample_index = 0
 # guarda o último patamar de qualidade do ar ("verde", "amarelo", "vermelho")
 last_status_level = None
 
-def send_telegram_message(text: str):
-    """Envia mensagem ao Telegram e registra no log local do dashboard."""
-    if not TELEGRAM_BOT_TOKEN:
-        return
-
-    url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
-    payload = {
-        "chat_id": TELEGRAM_CHAT_ID,
-        "text": text,
-        "parse_mode": "Markdown"
-    }
-
-    # REGISTRA NO LOG
-    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    telegram_log.append({"Horário": timestamp, "Mensagem": text})
+def send_whatsapp(text):
+    msg = urllib.parse.quote(text)
+    url = f"https://api.callmebot.com/whatsapp.php?phone={CALLMEBOT_PHONE}&text={msg}&apikey={CALLMEBOT_KEY}"
 
     try:
-        resp = requests.post(url, json=payload, timeout=5)
-        if resp.status_code != 200:
-            print("Falha ao enviar Telegram:", resp.text)
+        r = requests.get(url, timeout=5)
+        if r.status_code != 200:
+            print("Erro WhatsApp:", r.text)
     except Exception as e:
-        print("Erro ao enviar Telegram:", e)
+        print("Erro WhatsApp:", e)
 
 
 def on_connect(client, userdata, flags, rc):
@@ -187,7 +176,7 @@ while True:
                 f"*LPG:* {ppm:.2f} ppm\n"
                 f"*Horário:* {latest_ts}"
             )
-            send_telegram_message(msg)
+            send_whatsapp(msg)
             last_status_level = status_level
 
         # card de LPG atual
