@@ -6,10 +6,13 @@ import pandas as pd
 from datetime import datetime
 import altair as alt
 
-MQTT_BROKER = "192.168.15.30"  # mesmo do ESP
-MQTT_PORT   = 1883
+
 TOPIC_LPG   = "railtracker/gas/lpg_ppm"
 TOPIC_ALERT = "railtracker/gas/alert"
+MQTT_BROKER = st.secrets["MQTT_BROKER"]
+MQTT_PORT   = int(st.secrets["MQTT_PORT"])
+MQTT_USER   = st.secrets["MQTT_USER"]
+MQTT_PASS   = st.secrets["MQTT_PASS"]
 
 # variável global pra guardar último valor
 latest_ppm = 0.0
@@ -58,6 +61,9 @@ def mqtt_thread():
     client = mqtt.Client()
     client.on_connect = on_connect
     client.on_message = on_message
+
+    # autenticação
+    client.username_pw_set(MQTT_USER, MQTT_PASS)
 
     client.connect(MQTT_BROKER, MQTT_PORT, 60)
     client.loop_forever()
