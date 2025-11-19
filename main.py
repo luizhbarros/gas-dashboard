@@ -5,6 +5,7 @@ import time
 import pandas as pd
 from datetime import datetime
 import altair as alt
+import requests
 
 
 TOPIC_LPG   = "railtracker/gas/lpg_ppm"
@@ -13,6 +14,8 @@ MQTT_BROKER = st.secrets["MQTT_BROKER"]
 MQTT_PORT   = int(st.secrets["MQTT_PORT"])
 MQTT_USER   = st.secrets["MQTT_USER"]
 MQTT_PASS   = st.secrets["MQTT_PASS"]
+TELEGRAM_BOT_TOKEN = st.secrets["TELEGRAM_BOT_TOKEN"]
+TELEGRAM_CHAT_ID   = st.secrets.get("TELEGRAM_CHAT_ID", "5815095930")
 
 # variável global pra guardar último valor
 latest_ppm = 0.0
@@ -30,6 +33,26 @@ last_update_id = 0
 
 # contador de amostras (cada amostra = 20 s)
 sample_index = 0
+# guarda o último patamar de qualidade do ar ("verde", "amarelo", "vermelho")
+last_status_level = None
+
+def send_telegram_message(text: str):
+    """Envia uma mensagem simples para o chat configurado no Telegram."""
+    if not TELEGRAM_BOT_TOKEN:
+        return
+
+    url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
+    payload = {
+        "chat_id": TELEGRAM_CHAT_ID,
+        "text": text,
+        "parse_mode": "Markdown"
+    }
+    try:
+        resp = requests.post(url, json=payload, timeout=5)
+        if resp.status_code != 200:
+            print("Falha ao enviar Telegram:", resp.text)
+    except Exception as e:
+        print("Erro ao enviar Telegram:", e)
 
 
 def on_connect(client, userdata, flags, rc):
@@ -134,10 +157,30 @@ while True:
         # lógica de status
         if ppm <= 1000:
             status = "🟢 Seguro"
+            status_level = "verde"
         elif ppm <= 2000:
             status = "🟡 Atenção"
+            status_level = "amarelo"
         else:
             status = "🔴 Perigo"
+            status_level = "vermelho"
+
+            # ===== Lógica de envio de alerta quando mudar de patamar =====
+        global last_status_level
+        if last_status_level is None:
+            # primeira leitura: só inicializa
+            last_status_level = status_level
+        elif status_level != last_status_level:
+            # mudou de patamar (verde -> amarelo, amarelo -> vermelho, etc.)
+            msg = (
+                f"⚠️ Qualidade do ar mudou de patamar!\n\n"
+                f"*De:* {last_status_level.upper()}\n"
+                f"*Para:* {status_level.upper()}\n"
+                f"*LPG:* {ppm:.2f} ppm\n"
+                f"*Horário:* {latest_ts}"
+            )
+            send_telegram_message(msg)
+            last_status_level = status_level
 
         # card de LPG atual
         card_ppm.markdown(
