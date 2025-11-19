@@ -234,29 +234,17 @@ while True:
         # guarda valor atual para próxima comparação
         prev_ppm = ppm
 
-        # Status textual, com cor diferente por patamar
+        # Status textual, sem duplicar a palavra (ex.: "Seguro Seguro")
         if status_level == "verde":
             status_text = "Seguro"
-            status_color = "#22c55e"  # verde
         elif status_level == "amarelo":
             status_text = "Atenção"
-            status_color = "#facc15"  # amarelo
         else:
             status_text = "Perigo"
-            status_color = "#ef4444"  # vermelho
 
-        # usamos HTML/CSS para colorir o texto, já que st.metric não permite cor customizada
-        # margin-top negativo para alinhar verticalmente com os outros cards de métricas
-        card_status.markdown(
-            f"""
-            <div style="text-align:center; margin-top:-12px;">
-              <div style="font-size:0.9rem; color:#9ca3af;">Status</div>
-              <div style="font-size:2.5rem; font-weight:700; color:{status_color};">
-                {status_text}
-              </div>
-            </div>
-            """,
-            unsafe_allow_html=True,
+        card_status.metric(
+            label="Status",
+            value=status_text,
         )
 
         # Último alerta (se já houve algum)
